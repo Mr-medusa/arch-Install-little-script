@@ -1,0 +1,89 @@
+#!/bin/bash
+## 友情提示:
+## 如果发现报错信息包含/M可使用vim在命令行模式键入":set fileformat=unix"转为linux文件即可
+## 切换用户后可以安装一下vim方便拷贝安装脚本的内容： pacman -S --noconfirm vim
+info(){
+	  echo "-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+"
+	  printf "%-35s %-16s %35s\n" "-----+" "${1}" "           -----+"
+	  echo "-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+"
+}
+info 设置时区
+ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && hwclock --systohc 
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+## 											修改hostname
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+info 修改HOSTNAME
+pacman -S --noconfirm vim 
+echo "127.0.0.1     localhost
+::1           localhost
+127.0.0.1     archlinux.localdomain archlinux" > /etc/hostname
+cat /etc/hostname
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+## 											设置语言
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+info 设置语言
+sed -i "s/#en_US.UTF-8/en_US.UTF-8/g" /etc/locale.gen && sed -i "s/#zh_CN.UTF-8/zh_CN.UTF-8/g" /etc/locale.gen && locale-gen  
+echo "LANG=en_US.UTF-8">/etc/locale.conf
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+## 											安装引导程序
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+info 安装引导程序开始
+pacman -S --noconfirm efibootmgr
+echo '===================================================================================================' 
+lsblk -o PARTUUID,NAME,MOUNTPOINT>./lsblk.txt
+cat ./lsblk.txt
+echo '==================================================================================================='
+partuuid=""
+while read line
+do
+	strA=$line
+	strB="sda2"
+	result=$(echo $strA | grep "${strB}")
+	if [[ "$result" != "" ]]
+	then
+		partuuid=$(echo $line| cut -f 1 -d " ")
+		echo $partuuid
+		echo "=============================找到partuuid：===================================="
+		info "partuuid: $partuuid"
+	fi
+done<./lsblk.txt
+
+execEfiBoot="efibootmgr --disk /dev/sda --part 1 --create --label \"Arch Linux\" --loader /vmlinuz-linux --unicode 'root=PARTUUID=$partuuid rw selinux=0 initrd=/initramfs-linux.img' --verbose"
+echo "$execEfiBoot"
+echo '========================================  execEfiBoot =========================================='
+echo $execEfiBoot
+echo '========================================  execEfiBoot =========================================='
+eval $execEfiBoot
+rm -rf ./lsblk.txt
+info '验证条目开始'
+efibootmgr --verbose
+info '验证条目结束'
+echo ''
+echo ''
+sleep 4
+info 安装引导程序结束
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
+## 											安装网络软件
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+info 安装网络软件开始
+pacman -S --noconfirm networkmanager net-tools openssh 
+
+systemctl enable NetworkManager && systemctl enable sshd 
+
+sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/" /etc/ssh/sshd_config
+info 安装网络软件结束
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+info '使用命令exit退出完成安装'
+info '使用命令exit退出完成安装'
+info '使用命令exit退出完成安装'
+sleep 5
+rm -rf $0
+
+
