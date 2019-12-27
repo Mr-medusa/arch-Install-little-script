@@ -183,7 +183,6 @@ rm -rf ./lsblk.txt
 
 info 安装完成
 
-sleep 5
 umount -R /mnt
 
 
