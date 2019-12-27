@@ -1,12 +1,12 @@
 #!/bin/bash
 ## 友情提示:
-## 如果发现报错信息包含/M可使用vim在命令行模式键入":set fileformat=unix"转为linux文件即可
-## 上传安装脚本可以使用xshell自带的ftp工具或WinSCP等工具,或直接拷贝内容到shell脚本使用bash Arch-EFISTUB-Before-Chroot.txt运行即可
+## 如果发现报错可使用vim在命令行模式键入":set fileformat=unix"转为linux文件即可
+## 
 ## 我只单独分了root分区,使用的是UEFI所以不需要boot分区,而是esp分区
+## 
 ## 由于每个人的分区和挂载编好不同,所以仍需要稍微调整一下以符合自己的期望
-## 调整方法参考一下代码的Parted Table部分
-
-## 注意
+## 此脚本需要修改以下内容的Parted Table部分
+##
 ## 需要安装的磁盘,这里一定要修改为所要安装的磁盘
 disk="sda"
 
@@ -18,7 +18,7 @@ info(){
 	  printf "%-35s %-16s %35s\n" "-----+" "${1}" "           -----+"
 	  echo "-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+"
 }
-read -p "确定你要安装的磁盘是[n/y]:$disk,如果不是请修改继续 " isTheDisk
+read -p "确定你要安装的磁盘是[n/y]:$disk,如果不是请修改后继续 " isTheDisk
 if [ "$isTheDisk" == "n" ]
 	then
 		info "退出安装"

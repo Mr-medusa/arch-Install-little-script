@@ -1,7 +1,11 @@
 #!/bin/bash
 ## 友情提示:
-## 如果发现报错信息包含/M可使用vim在命令行模式键入":set fileformat=unix"转为linux文件即可
-## 切换用户后可以安装一下vim方便拷贝安装脚本的内容： pacman -S --noconfirm vim
+##
+## 如果发现报错可使用vim在命令行模式键入":set fileformat=unix"转为linux文件即可
+## 此脚本需要修改磁盘位置及以下内容-> Root分区所在位置
+##
+disk="sda"
+
 info(){
 	  echo "-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+"
 	  printf "%-35s %-16s %35s\n" "-----+" "${1}" "           -----+"
@@ -40,7 +44,11 @@ partuuid=""
 while read line
 do
 	strA=$line
-	strB="sda2"
+## =============================================================================================
+## |						 Root分区所在位置,默认为磁盘的分区2 		  			       |
+## =============================================================================================
+	strB="${disk}2"
+	
 	result=$(echo $strA | grep "${strB}")
 	if [[ "$result" != "" ]]
 	then
@@ -51,7 +59,7 @@ do
 	fi
 done<./lsblk.txt
 
-execEfiBoot="efibootmgr --disk /dev/sda --part 1 --create --label \"Arch Linux\" --loader /vmlinuz-linux --unicode 'root=PARTUUID=$partuuid rw selinux=0 initrd=/initramfs-linux.img' --verbose"
+execEfiBoot="efibootmgr --disk /dev/$disk --part 1 --create --label \"Arch Linux\" --loader /vmlinuz-linux --unicode 'root=PARTUUID=$partuuid rw selinux=0 initrd=/initramfs-linux.img' --verbose"
 echo "$execEfiBoot"
 echo '========================================  execEfiBoot =========================================='
 echo $execEfiBoot
