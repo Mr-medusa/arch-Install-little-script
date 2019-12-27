@@ -31,7 +31,7 @@ timedatectl set-ntp true
 
 ## 											清空分区
 ## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-devNames=`lsblk -lo name| grep sda`
+devNames=`lsblk -lo name| grep $disk`
 function clearDevParts
 {
 	rex="^$disk[0-9]$"
