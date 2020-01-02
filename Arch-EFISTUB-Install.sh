@@ -155,7 +155,8 @@ findpart_uuid(){
 ## ================================================================================================
 ## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
 archroot "设置时区" "ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && hwclock --systohc"
-archroot "修改HOSTNAME" "echo \"127.0.0.1\tlocalhost\n::1\t\tlocalhost\n127.0.0.1\tarchlinux.localdomain archlinux\" > /etc/hostname" 
+archroot "修改HOSTNAME" "echo \"Arch\" > /etc/hostname" 
+archroot "修改HOSTS" "printf \"127.0.0.1\tlocalhost\n::1\t\tlocalhost\n127.0.0.1\tarchlinux.localdomain archlinux\" > /etc/hosts" 
 archroot "设置语言" "sed -i \"s/#en_US.UTF-8/en_US.UTF-8/g\" /etc/locale.gen && sed -i \"s/#zh_CN.UTF-8/zh_CN.UTF-8/g\" /etc/locale.gen && locale-gen" 
 archroot "编辑locale.conf" "echo \"LANG=en_US.UTF-8\">/etc/locale.conf" 
 lsblk -o PARTUUID,NAME,MOUNTPOINT>./lsblk.txt
