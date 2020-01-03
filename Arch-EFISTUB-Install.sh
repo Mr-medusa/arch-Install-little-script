@@ -23,9 +23,11 @@
 ## ===============================================================================================
 disk="sda"
 ## ===============================================================================================
-## |						 Root分区所在位置,默认为分区2(sda2) 		  			                 |
+## |						 Root分区所在位置,默认为分区3(sda3) 		  			                 |
 ## ===============================================================================================
-rootPart="2"
+homePart="2"
+rootPart="3"
+
 
 
 
@@ -77,21 +79,30 @@ clearDevParts $devNames
 echo "yes" | parted "/dev/$disk" mklabel gpt
 ## esp分区
 parted "/dev/$disk" mkpart primary fat32 1M 160M
+## home分区
+parted "/dev/$disk" mkpart primary ext4 160M 10G
 ## 根分区		
-parted "/dev/$disk" mkpart primary ext4 160M 100%		
+parted "/dev/$disk" mkpart primary ext4 10G 100%		
 parted "/dev/$disk" set 1 boot on
 
 ## 
 
 info 格式化开始
-eval "mkfs.fat -F32 /dev/${disk}1 && mkfs.ext4 /dev/${disk}2"
+eval "mkfs.fat -F32 /dev/${disk}1 && mkfs.ext4 /dev/${disk}${rootPart} && mkfs.ext4 /dev/${disk}${homePart}"
 
 ## 								挂载分区这里调整	
 ## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+					
-eval "mount /dev/${disk}2 /mnt && mkdir -p /mnt/boot && mount /dev/${disk}1 /mnt/boot"					  	
+eval "mount /dev/${disk}${rootPart} /mnt && mkdir -p /mnt/boot && mount /dev/${disk}1 /mnt/boot && mkdir -p /mnt/home && mount /dev/${disk}${homePart} /mnt/home"					  	
 ## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+	
 
 lsblk
+
+read -p "确定分区正确[n/y]: " isAllRight
+if [ "$isAllRight" == "n" ]
+	then
+		info "退出安装"
+		exit
+fi
 
 info 格式化结束
 ## =============================================================================================
@@ -109,7 +120,7 @@ sed -i "s/#Server/Server/g" /etc/pacman.d/mirrorlist && cat /etc/pacman.d/mirror
 ## 											安装软件包
 ## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 info 安装软件包开始
-pacstrap /mnt base base-devel linux linux-firmware 
+pacstrap /mnt base linux 
 info 安装软件包结束
 ## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -133,7 +144,7 @@ findpart_uuid(){
 	do
 		strA=$line
 	## =============================================================================================
-	## |						 Root分区所在位置,默认为磁盘的分区2 		  			       |
+	## |						 Root分区所在位置,默认为磁盘的分区3 		  			       |
 	## =============================================================================================
 		strB="${disk}${rootPart}"
 	## ---------------------------------------------------------------------------------------------
