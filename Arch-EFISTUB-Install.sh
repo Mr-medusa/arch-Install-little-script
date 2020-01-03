@@ -120,7 +120,7 @@ sed -i "s/#Server/Server/g" /etc/pacman.d/mirrorlist && cat /etc/pacman.d/mirror
 ## 											安装软件包
 ## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 info 安装软件包开始
-pacstrap /mnt base linux 
+pacstrap /mnt base base-devel linux 
 info 安装软件包结束
 ## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
