@@ -9,7 +9,7 @@ Archlinux的自动化安装脚本(支持多系统)
 - **此脚本默认安装到sda磁盘,分区为:**
   
   - esp分区:160M(260–512M)
-- root分区:30G
+  - root分区:30G
   - home分区:20G
   - swap分区:4G
   
@@ -29,15 +29,13 @@ Archlinux的自动化安装脚本(支持多系统)
     ## ===============================================================================
     ## esp分区,Windows10已经有ESP分区了,直接用即可,这里就不创建了
     ## parted "/dev/$disk" mkpart primary fat32 1M 160M
-  ## swap分区
+    ## swap分区
     parted "/dev/$disk" mkpart primary linux-swap 62.9G 64G
     ## root分区		
     parted "/dev/$disk" mkpart primary ext4 64G 94G
     ## home分区
     parted "/dev/$disk" mkpart primary ext4 94G 100%
     ```
-    
-    
 
 - **自动安装引导项(EEFISTUB)**
 
