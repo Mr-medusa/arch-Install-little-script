@@ -2,8 +2,6 @@
 ## 友情提示:
 ## 如果发现报错可使用vim在命令行模式键入":set fileformat=unix"转为linux文件即可
 ## 
-## 我只单独分了root分区,使用的是UEFI所以不需要boot分区,而是esp分区
-## 
 ## 由于每个人的分区和挂载编好不同,所以仍需要稍微调整一下以符合自己的期望
 ## 此脚本需要修改以下内容的Parted Table部分
 
@@ -23,16 +21,19 @@
 ## ===============================================================================================
 disk="sda"
 ## ===============================================================================================
-## |						 Root分区所在位置,默认为分区3(sda3) 		  			                 |
+## |						 Root分区所在位置,默认为分区3(sda3) 		  			             |
 ## ===============================================================================================
-homePart="2"
-rootPart="3"
+## 以下面的parted分区顺序为准
+espPart="2"
+## [n/y]多系统的EFI应已经存在esp分区了,不存在则创建
+espPartExists="y" 
+swapPart="5"
+rootPart="6"
+homePart="7"
 
 
-
-
-
-
+## 微码: AMD为amd-ucode
+microCode="intel-ucode"
 
 
 info(){
@@ -51,48 +52,40 @@ info "安装开始"
 ## 设置时区同步
 timedatectl set-ntp true
 
-## 											清空分区
-## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-devNames=`lsblk -lo name| grep $disk`
-function clearDevParts
-{
-	rex="^$disk[0-9]$"
-	while test $# -gt 0
-		do
-		result=$(echo $1 | grep $rex )
-		if [[ "$result" != "" ]]
-			then
-			echo "正在删除: $1 分区"
-			rmPart=$1
-			eval "parted /dev/$disk rm ${rmPart: -1}" 
-		fi
-		shift
-	done
-}
-clearDevParts $devNames
-## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
 ## =============================================================================================
 ## |							 Parted Table 		   				           				   |
 ## =============================================================================================
 echo "yes" | parted "/dev/$disk" mklabel gpt
 ## esp分区
-parted "/dev/$disk" mkpart primary fat32 1M 160M
+## parted "/dev/$disk" mkpart primary fat32 1M 160M
+## swap分区
+parted "/dev/$disk" mkpart primary linux-swap 62.9G 64G
+## root分区		
+parted "/dev/$disk" mkpart primary ext4 64G 94G
 ## home分区
-parted "/dev/$disk" mkpart primary ext4 160M 10G
-## 根分区		
-parted "/dev/$disk" mkpart primary ext4 10G 100%		
-parted "/dev/$disk" set 1 boot on
+parted "/dev/$disk" mkpart primary ext4 94G 100%
 
+## parted "/dev/$disk" set 1 esp on
 ## 
 
 info 格式化开始
-eval "mkfs.fat -F32 /dev/${disk}1 && mkfs.ext4 /dev/${disk}${rootPart} && mkfs.ext4 /dev/${disk}${homePart}"
+if [ "$espPartExists" == "n" ]
+	then
+		eval "mkfs.fat -F32 /dev/${disk}${espPart}"
+	exit
+fi
+eval "mkfs.ext4 /dev/${disk}${rootPart}"
+eval "mkfs.ext4 /dev/${disk}${homePart}"
+eval "mkswap /dev/${disk}${swapPart}"
+
+info 启动新的swap分区
+eval "swapon /dev/${disk}${swapPart}"
 
 ## 								挂载分区这里调整	
 ## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+					
-eval "mount /dev/${disk}${rootPart} /mnt && mkdir -p /mnt/boot && mount /dev/${disk}1 /mnt/boot && mkdir -p /mnt/home && mount /dev/${disk}${homePart} /mnt/home"					  	
+eval "mount /dev/${disk}${rootPart} /mnt"
+eval "mkdir -p /mnt/boot && mount /dev/${disk}${espPart} /mnt/boot"
+eval "mkdir -p /mnt/home && mount /dev/${disk}${homePart} /mnt/home"					  	
 ## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+	
 
 lsblk
@@ -118,9 +111,9 @@ sed -i "s/#Server/Server/g" /etc/pacman.d/mirrorlist && cat /etc/pacman.d/mirror
 
 
 ## 											安装软件包
-## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> base-devel
 info 安装软件包开始
-pacstrap /mnt base base-devel linux 
+pacstrap /mnt base  linux linux-firmware
 info 安装软件包结束
 ## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -137,7 +130,24 @@ archroot(){
 	arch-chroot /mnt /bin/bash -c "$2"
 	info "$1 End"
 }
-
+## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+## ================================================================================================
+## |							 arch-chroot start		   				           			      |
+## ================================================================================================
+## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+archroot "设置时区" "ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && hwclock --systohc"
+archroot "修改HOSTNAME" "echo \"Arch\" > /etc/hostname" 
+archroot "修改HOSTS" "printf \"127.0.0.1\tlocalhost\n::1\t\tlocalhost\n127.0.0.1\tarchlinux.localdomain archlinux\" > /etc/hosts" 
+archroot "设置语言" "sed -i \"s/#en_US.UTF-8/en_US.UTF-8/g\" /etc/locale.gen && sed -i \"s/#zh_CN.UTF-8/zh_CN.UTF-8/g\" /etc/locale.gen && locale-gen" 
+archroot "编辑locale.conf" "echo \"LANG=en_US.UTF-8\">/etc/locale.conf" 
+## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+## ================================================================================================
+## |							 arch-chroot 添加启动项		   				           			      |
+## ================================================================================================
+## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+archroot "安装引导程序" "pacman -Sy --noconfirm refind-efi efibootmgr ${microCode}"
+archroot "安装refind" "refind-install"
 partuuid=""
 findpart_uuid(){
 	while read line
@@ -159,43 +169,30 @@ findpart_uuid(){
 		fi
 	done<./lsblk.txt
 }
-
-## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
-## ================================================================================================
-## |							 arch-chroot start		   				           			      |
-## ================================================================================================
-## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
-archroot "设置时区" "ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && hwclock --systohc"
-archroot "修改HOSTNAME" "echo \"Arch\" > /etc/hostname" 
-archroot "修改HOSTS" "printf \"127.0.0.1\tlocalhost\n::1\t\tlocalhost\n127.0.0.1\tarchlinux.localdomain archlinux\" > /etc/hosts" 
-archroot "设置语言" "sed -i \"s/#en_US.UTF-8/en_US.UTF-8/g\" /etc/locale.gen && sed -i \"s/#zh_CN.UTF-8/zh_CN.UTF-8/g\" /etc/locale.gen && locale-gen" 
-archroot "编辑locale.conf" "echo \"LANG=en_US.UTF-8\">/etc/locale.conf" 
 lsblk -o PARTUUID,NAME,MOUNTPOINT>./lsblk.txt
 ## 											获取partuuid				
-## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 info 获取partuuid
 findpart_uuid
-execEfiBoot="efibootmgr --disk /dev/$disk --part 1 --create --label \"Arch Linux\" --loader /vmlinuz-linux --unicode 'root=PARTUUID=$partuuid rw selinux=0 initrd=/initramfs-linux.img' --verbose"
-## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-archroot "安装引导程序" "pacman -S --noconfirm efibootmgr" 
-info "execEfiBoot: $execEfiBoot"
+execEfiBoot="efibootmgr --disk /dev/$disk --part ${espPart} --create --label \"Arch Linux\" -l \\\\EFI\\\\refind\\\\refind_x64.efi --verbose"
 archroot "执行安装引导程序" "$execEfiBoot"
-info 安装引导程序结束
-archroot "安装网络软件开始" "pacman -S --noconfirm networkmanager net-tools openssh && systemctl enable NetworkManager && systemctl enable sshd"
+## ================================================================================================
+## |							 arch-chroot 添加启动项		   				           			      |
+## ================================================================================================
+## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+archroot "安装必备软件开始" "pacman -Sy --noconfirm vim networkmanager net-tools openssh iw wpa_supplicant dhcp && systemctl enable NetworkManager"
 archroot "配置SSHD" "sed -i \"s/#PermitRootLogin prohibit-password/PermitRootLogin yes/\" /etc/ssh/sshd_config"
-archroot "验证条目开始" "efibootmgr --verbose"
-## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
-## ================================================================================================
-## |							 arch-chroot end		   				           			      |
-## ================================================================================================
-## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
 
-
+archroot "验证条目" "efibootmgr --verbose"
+archroot "添加rEFInd内核启动项参数" "cat > /boot/refind_linux.conf <<EOF
+\"Boot using default options\"    \"root=PARTUUID=${partuuid} rw add_efi_memmap initrd=/${microCode}.img initrd=/initramfs-linux.img\" 
+EOF"
+ 
 rm -rf ./lsblk.txt 
 
 info 安装完成
 
-umount -R /mnt
+
+
 
 
 

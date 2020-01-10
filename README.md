@@ -1,21 +1,24 @@
 ### 介绍
 
-Archlinux的自动化安装脚本
+Archlinux的自动化安装脚本(支持多系统)
 
 ### 使用
 
-#### 将Arch-EFISTUB-Install.sh脚本上传执行(bash Arch...),这个脚本主要完成
+#### 将Arch-rEFInd-Install.txt脚本上传执行(bash Arch...),这个脚本主要完成
 
 - **此脚本默认安装到sda磁盘,分区为:**
-  - esp分区:160M
-  - root分区:剩余所有
-
+  
+  - esp分区:160M(260–512M)
+- root分区:30G
+  - home分区:20G
+  - swap分区:4G
+  
 - **自动分区并格式化**
 
   - **由于每个人的分区和挂载编好不同,所以仍需要稍微调整一下以符合自己的期望**
-  
+
   - **磁盘与根分区修改代码块**
-  
+
     ```shell
     ## ===============================================================================
     ## |						 被安装的磁盘 		  			       		    |
@@ -24,17 +27,25 @@ Archlinux的自动化安装脚本
     ## ===============================================================================
     ## |					 Root分区所在位置,默认为磁盘的分区2(sda2) 		  	   |
     ## ===============================================================================
-    rootPart="2"
+    ## esp分区,Windows10已经有ESP分区了,直接用即可,这里就不创建了
+    ## parted "/dev/$disk" mkpart primary fat32 1M 160M
+  ## swap分区
+    parted "/dev/$disk" mkpart primary linux-swap 62.9G 64G
+    ## root分区		
+    parted "/dev/$disk" mkpart primary ext4 64G 94G
+    ## home分区
+    parted "/dev/$disk" mkpart primary ext4 94G 100%
     ```
-  
+    
     
 
 - **自动安装引导项(EEFISTUB)**
 
-- 安装必要的网络软件包
+- 安装必要的网络软件包(无线网络管理软件iw,wpa_supplicant)
   - networkmanager 
   - net-tools 
   - openssh 
+  - ...
 
 ---
 
