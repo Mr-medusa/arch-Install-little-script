@@ -179,7 +179,7 @@ archroot "执行安装引导程序" "$execEfiBoot"
 ## |							 arch-chroot 添加启动项		   				           			      |
 ## ================================================================================================
 ## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
-archroot "安装必备软件开始" "pacman -Sy --noconfirm vim networkmanager net-tools openssh iw wpa_supplicant dialog dhcpcd && systemctl enable NetworkManager && systemctl enable sshd"
+archroot "安装必备软件开始" "pacman -Sy --noconfirm vim networkmanager net-tools openssh iw wpa_supplicant dhcpcd dialog && systemctl enable NetworkManager && systemctl enable sshd"
 archroot "配置SSHD" "sed -i \"s/#PermitRootLogin prohibit-password/PermitRootLogin yes/\" /etc/ssh/sshd_config"
 
 archroot "验证条目" "efibootmgr --verbose"
