@@ -113,7 +113,7 @@ sed -i "s/#Server/Server/g" /etc/pacman.d/mirrorlist && cat /etc/pacman.d/mirror
 ## 											安装软件包
 ## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> base-devel
 info 安装软件包开始
-pacstrap /mnt base  linux linux-firmware
+pacstrap /mnt base base-devel linux linux-firmware
 info 安装软件包结束
 ## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -179,7 +179,7 @@ archroot "执行安装引导程序" "$execEfiBoot"
 ## |							 arch-chroot 添加启动项		   				           			      |
 ## ================================================================================================
 ## -----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
-archroot "安装必备软件开始" "pacman -Sy --noconfirm vim networkmanager net-tools openssh iw wpa_supplicant dhcp && systemctl enable NetworkManager"
+archroot "安装必备软件开始" "pacman -Sy --noconfirm vim networkmanager net-tools openssh iw wpa_supplicant dialog dhcpcd && systemctl enable NetworkManager && systemctl enable sshd"
 archroot "配置SSHD" "sed -i \"s/#PermitRootLogin prohibit-password/PermitRootLogin yes/\" /etc/ssh/sshd_config"
 
 archroot "验证条目" "efibootmgr --verbose"
